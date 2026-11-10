@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-slate-950 text-white antialiased;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation-duration: var(--tw-duration, 200ms);
+    animation-fill-mode: both;
+  }
+  .fade-in {
+    animation-name: fadeIn;
+  }
+  .slide-in-from-bottom-2 {
+    animation-name: slideInBottom2;
+  }
+  .slide-in-from-bottom-5 {
+    animation-name: slideInBottom5;
+  }
+  .duration-200 { --tw-duration: 200ms; animation-duration: 200ms; }
+  .duration-1000 { --tw-duration: 1000ms; animation-duration: 1000ms; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInBottom2 {
+  from { transform: translateY(0.5rem); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInBottom5 {
+  from { transform: translateY(1.25rem); opacity: 0; }
+  to { transform: translateY(-3rem); opacity: 0; }
+}
+
+/* Speaking waveform bars */
+@keyframes bar1 {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+@keyframes bar2 {
+  0%, 100% { transform: scaleY(0.8); }
+  50% { transform: scaleY(0.3); }
+}
+@keyframes bar3 {
+  0%, 100% { transform: scaleY(0.55); }
+  50% { transform: scaleY(0.9); }
+}
+
+@keyframes junctionReaction {
+  0% { opacity: 0; transform: translateY(0) scale(0.7) rotate(-8deg); }
+  12% { opacity: 1; transform: translateY(-1rem) scale(1) rotate(4deg); }
+  72% { opacity: 0.95; transform: translateY(-55vh) scale(1.15) rotate(-4deg); }
+  100% { opacity: 0; transform: translateY(-72vh) scale(0.8) rotate(8deg); }
+}
+.animate-junction-reaction {
+  animation: junctionReaction 4.2s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.35));
+}
+@keyframes chatPopup {
+  0% { opacity: 0; transform: translateY(1rem) scale(0.96); }
+  12%, 82% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-0.35rem) scale(0.98); }
+}
+.animate-chat-popup {
+  animation: chatPopup 4.2s ease-out forwards;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
