@@ -65,54 +65,56 @@ export function NicknameModal({ open, session, onConfirm, onCancel }: NicknameMo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-white/10 p-6 shadow-2xl space-y-6">
-        <div className="text-center space-y-1">
-          <h2 className="text-xl font-bold text-white">Pick your identity</h2>
-          <p className="text-sm text-white/50">No account needed. This is how others will see you.</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/35 animate-in fade-in duration-200">
+      <section role="dialog" aria-modal="true" aria-labelledby="nickname-title" className="dialog space-y-4">
+        <div className="space-y-1">
+          <h2 id="nickname-title" className="text-base font-semibold">Join as a guest</h2>
+          <p className="text-sm text-muted">Choose how you’ll appear to others in the room.</p>
         </div>
 
         {/* Preview */}
-        <div className="flex flex-col items-center gap-3 py-2">
-          <Avatar emoji={emoji} color={color} size="xl" ring />
-          <span className="text-white font-medium text-lg">{nickname.trim() || 'Your nickname'}</span>
+        <div className="flex items-center gap-3 rounded-md border border-line bg-canvas p-2.5">
+          <Avatar emoji={emoji} color={color} size="md" />
+          <span className="min-w-0 truncate text-sm font-medium">{nickname.trim() || 'Your nickname'}</span>
         </div>
 
         {/* Nickname */}
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-white/60 uppercase tracking-wide">Nickname</label>
+        <div className="space-y-1.5">
+          <label htmlFor="guest-nickname" className="block text-xs font-medium text-muted">Nickname</label>
           <div className="flex gap-2">
             <input
+              id="guest-nickname"
               value={nickname}
               onChange={(e) => checkNickname(e.target.value)}
               maxLength={24}
               placeholder="e.g. Curious Panda"
-              className="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-400 transition-colors"
+              className="field min-w-0 flex-1"
             />
             <button
               onClick={shuffleName}
-              className="px-3 rounded-xl bg-slate-800 border border-white/10 text-white/70 hover:text-white hover:border-white/30 transition-colors"
-              title="Random name"
+              className="button button-secondary"
+              aria-label="Random name"
             >
               <Shuffle size={18} />
             </button>
           </div>
           {taken && (
-            <p className="text-xs text-amber-400">Someone is using that name right now. Try another?</p>
+            <p className="text-xs text-warning">Someone is using that name right now. Try another?</p>
           )}
-          {checking && <p className="text-xs text-white/40">Checking…</p>}
+          {checking && <p className="text-xs text-muted">Checking…</p>}
         </div>
 
         {/* Avatar emoji */}
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-white/60 uppercase tracking-wide">Avatar</label>
-          <div className="grid grid-cols-10 gap-1.5 max-h-32 overflow-y-auto p-1 rounded-xl bg-slate-800/50">
+        <div className="space-y-1.5">
+          <p id="guest-avatar" className="text-xs font-medium text-muted">Avatar</p>
+          <div className="grid max-h-28 grid-cols-7 gap-1 overflow-y-auto rounded-md bg-subtle p-1.5 sm:grid-cols-8" role="group" aria-labelledby="guest-avatar">
             {AVATAR_EMOJIS.map((e) => (
               <button
                 key={e}
                 onClick={() => setEmoji(e)}
-                className={`aspect-square rounded-lg flex items-center justify-center text-lg transition-all ${
-                  emoji === e ? 'bg-indigo-500/30 ring-1 ring-indigo-400' : 'hover:bg-white/5'
+                aria-pressed={emoji === e}
+                className={`grid aspect-square place-items-center rounded-md text-base transition-colors ${
+                  emoji === e ? 'bg-surface ring-1 ring-inset ring-accent' : 'hover:bg-surface'
                 }`}
               >
                 {e}
@@ -122,19 +124,21 @@ export function NicknameModal({ open, session, onConfirm, onCancel }: NicknameMo
         </div>
 
         {/* Color */}
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-white/60 uppercase tracking-wide">Color</label>
-          <div className="flex flex-wrap gap-2">
+        <div className="space-y-1.5">
+          <p id="guest-color" className="text-xs font-medium text-muted">Color</p>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby="guest-color">
             {AVATAR_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => setColor(c)}
-                className={`w-8 h-8 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-offset-slate-900 ring-white scale-110' : 'hover:scale-105'}`}
+                aria-label={`Avatar color ${c}`}
+                aria-pressed={color === c}
+                className={`size-7 rounded-full ${color === c ? 'ring-2 ring-accent ring-offset-1' : 'hover:ring-1 hover:ring-outline'}`}
                 style={{ backgroundColor: c }}
               >
                 {color === c && (
                   <span className="flex items-center justify-center w-full h-full">
-                    <Check size={14} className="text-white" />
+                    <Check size={14} className="text-ink" />
                   </span>
                 )}
               </button>
@@ -143,22 +147,22 @@ export function NicknameModal({ open, session, onConfirm, onCancel }: NicknameMo
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-2 pt-1">
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl bg-slate-800 border border-white/10 text-white/70 hover:text-white hover:border-white/30 transition-colors font-medium"
+            className="button button-secondary flex-1"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={taken || nickname.trim().length < 2}
-            className="flex-1 py-2.5 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="button button-primary flex-1"
           >
-            Enter Junction
+            Join room
           </button>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

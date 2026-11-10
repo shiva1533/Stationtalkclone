@@ -7,8 +7,36 @@
     height: 100%;
   }
   body {
-    @apply bg-slate-950 text-white antialiased;
-    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    @apply bg-canvas text-sm text-ink antialiased;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+}
+
+@layer components {
+  .button {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .button-primary {
+    @apply bg-accent text-white hover:bg-accent-hover;
+  }
+
+  .button-secondary {
+    @apply border border-line bg-surface text-ink hover:border-outline hover:bg-subtle;
+  }
+
+  .field {
+    @apply min-h-10 rounded-md border border-outline bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent;
+  }
+
+  .dialog {
+    @apply max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-lg border border-line bg-surface p-5 shadow-lg sm:p-6;
+  }
+}
+
+@layer base {
+  :is(button, input, textarea, select):focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-accent;
   }
 }
 
@@ -87,11 +115,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: #c7d0cb;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #a8b5af;
 }
 
 /* Line clamp utility */

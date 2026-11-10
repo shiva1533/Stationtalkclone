@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { SessionProvider, useSession } from '@/context/SessionContext';
 import { LandingPage } from '@/components/LandingPage';
 import { RoomView } from '@/components/RoomView';
@@ -45,18 +45,18 @@ function JunctionApp() {
 
   if (!ready || !session) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-indigo-400 rounded-full animate-spin" />
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-line border-t-accent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (loadingJunction) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="space-y-3 text-center">
-          <div className="w-8 h-8 border-2 border-white/20 border-t-indigo-400 rounded-full animate-spin mx-auto" />
-          <p className="text-white/40 text-sm">Entering Junction…</p>
+          <div className="w-8 h-8 border-2 border-line border-t-accent rounded-full animate-spin mx-auto" />
+          <p className="text-muted text-sm">Entering Junction…</p>
         </div>
       </div>
     );

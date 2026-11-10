@@ -7,9 +7,9 @@ interface AvatarProps {
 }
 
 const SIZES: Record<NonNullable<AvatarProps['size']>, string> = {
-  xs: 'w-7 h-7 text-sm',
-  sm: 'w-9 h-9 text-base',
-  md: 'w-11 h-11 text-xl',
+  xs: 'size-6 text-xs',
+  sm: 'size-8 text-sm',
+  md: 'size-10 text-lg',
   lg: 'w-14 h-14 text-2xl',
   xl: 'w-20 h-20 text-4xl',
 };
@@ -17,20 +17,14 @@ const SIZES: Record<NonNullable<AvatarProps['size']>, string> = {
 export function Avatar({ emoji, color, size = 'md', speaking, ring }: AvatarProps) {
   return (
     <div
-      className={`${SIZES[size]} rounded-full flex items-center justify-center shrink-0 relative transition-all duration-200`}
+      className={`grid shrink-0 place-items-center rounded-full border transition-shadow ${SIZES[size]}`}
       style={{
         backgroundColor: `${color}22`,
-        border: `2px solid ${color}`,
-        boxShadow: speaking ? `0 0 0 3px ${color}, 0 0 16px ${color}99` : ring ? `0 0 0 2px ${color}55` : 'none',
+        borderColor: `${color}55`,
+        boxShadow: speaking ? '0 0 0 2px #285d52' : ring ? `0 0 0 1px ${color}` : 'none',
       }}
     >
       <span className="leading-none">{emoji}</span>
-      {speaking && (
-        <span
-          className="absolute inset-0 rounded-full animate-ping opacity-30"
-          style={{ border: `2px solid ${color}` }}
-        />
-      )}
     </div>
   );
 }

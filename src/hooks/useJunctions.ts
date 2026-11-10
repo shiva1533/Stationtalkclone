@@ -23,6 +23,7 @@ export function useJunctions() {
     Record<string, { online: number; voice: number; participants: JunctionParticipantPreview[] }>
   >({});
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const fetchJunctions = useCallback(async () => {
     const { data, error } = await supabase
@@ -32,9 +33,10 @@ export function useJunctions() {
       .order('created_at', { ascending: true });
     if (error) {
       console.error('Failed to load junctions:', error);
-      return;
+    } else {
+      setJunctions((data as Junction[]) ?? []);
     }
-    setJunctions((data as Junction[]) ?? []);
+    setLoadFailed(Boolean(error));
     setLoading(false);
   }, []);
 
@@ -95,5 +97,11 @@ export function useJunctions() {
 
   const totalOnline = Object.values(presence).reduce((sum, p) => sum + p.online, 0);
 
-  return { junctions: junctionsWithPresence, loading, totalOnline, refresh: fetchPresence };
+  const retry = () => {
+    setLoading(true);
+    void fetchJunctions();
+    void fetchPresence();
+  };
+
+  return { junctions: junctionsWithPresence, loading, loadFailed, totalOnline, refresh: fetchPresence, retry };
 }

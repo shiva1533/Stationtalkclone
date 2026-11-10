@@ -208,24 +208,24 @@ export function ChatPanel({
   const canSend = input.trim().length > 0 && !sending && slowModeRemaining === 0;
 
   return (
-    <div className="flex flex-col h-full bg-[#10111b]/70 relative">
+    <div className="relative flex h-full min-h-0 flex-col bg-surface">
       {/* Chat header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-        <h3 className="font-semibold text-white/90 text-sm">Live Chat</h3>
+      <div className="flex min-h-12 shrink-0 items-center justify-between border-b border-line px-4">
+        <h3 className="text-sm font-semibold">Live chat</h3>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-[#6655e8] text-white font-medium">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-white font-medium">
               {unreadCount} new
             </span>
           )}
           {slowModeSeconds > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/20">
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-subtle text-warning border border-line">
               slow: {slowModeSeconds}s
             </span>
           )}
           <button
             onClick={onToggleMute}
-            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-subtle transition-colors"
             title={notificationsMuted ? 'Unmute notifications' : 'Mute notifications'}
           >
             {notificationsMuted ? <BellOff size={16} /> : <Bell size={16} />}
@@ -240,9 +240,8 @@ export function ChatPanel({
         className="flex-1 overflow-y-auto py-2 space-y-0.5 scroll-smooth"
       >
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-white/30 text-sm space-y-2">
-            <Smile size={32} className="opacity-50" />
-            <p>Be the first to say hello!</p>
+          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted">
+            <p>No messages yet. Say hello to start the chat.</p>
           </div>
         ) : (
           messages.map((msg) => (
@@ -263,11 +262,11 @@ export function ChatPanel({
 
       {/* Typing indicator */}
       {activeTyping.length > 0 && (
-        <div className="px-4 py-1.5 text-xs text-white/40 flex items-center gap-2 border-t border-white/5 bg-slate-900/60">
+        <div className="px-4 py-1.5 text-xs text-muted flex items-center gap-2 border-t border-line bg-subtle">
           <div className="flex gap-0.5">
-            <span className="w-1 h-1 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-1 h-1 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-1 h-1 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+            <span className="w-1 h-1 rounded-full bg-outline animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1 h-1 rounded-full bg-outline animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1 h-1 rounded-full bg-outline animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
           <span>
             {activeTyping.length === 1
@@ -283,7 +282,7 @@ export function ChatPanel({
       {!atBottom && unreadCount > 0 && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-20 right-6 z-10 px-3 py-1.5 rounded-full bg-[#6655e8] text-white text-xs font-medium shadow-lg flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-200"
+          className="absolute bottom-20 right-6 z-10 px-3 py-1.5 rounded-full bg-accent text-white text-xs font-medium shadow-lg flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           {unreadCount} new message{unreadCount > 1 ? 's' : ''} ↓
         </button>
@@ -291,13 +290,13 @@ export function ChatPanel({
 
       {/* Reply preview */}
       {replyTo && (
-        <div className="px-3 py-2 bg-[#6655e8]/10 border-t border-[#a89fff]/20 flex items-center gap-2">
-          <span className="text-white/30 text-xs">↳</span>
+        <div className="px-3 py-2 bg-accent-soft border-t border-accent-line flex items-center gap-2">
+          <span className="text-muted text-xs">↳</span>
           <div className="flex-1 min-w-0 text-xs">
-            <span style={{ color: replyTo.avatar_color }} className="font-medium">{replyTo.nickname}</span>
-            <span className="text-white/50">: {replyTo.content}</span>
+            <span className="font-medium">{replyTo.nickname}</span>
+            <span className="text-muted">: {replyTo.content}</span>
           </div>
-          <button onClick={() => setReplyTo(null)} className="text-white/40 hover:text-white">
+          <button onClick={() => setReplyTo(null)} className="text-muted hover:text-ink">
             <X size={14} />
           </button>
         </div>
@@ -305,13 +304,13 @@ export function ChatPanel({
 
       {/* Emoji picker */}
       {showEmoji && (
-        <div ref={emojiRef} className="px-3 py-2 border-t border-white/5 bg-[#141521]/95">
+        <div ref={emojiRef} className="max-h-[30dvh] shrink-0 overflow-y-auto border-t border-line bg-subtle px-3 py-2">
           <div className="grid grid-cols-10 gap-1">
             {EMOJI_PICKER.map((e) => (
               <button
                 key={e}
                 onClick={() => addEmoji(e)}
-                className="aspect-square rounded-lg hover:bg-white/10 flex items-center justify-center text-lg"
+                className="grid aspect-square place-items-center rounded-md text-sm hover:bg-surface"
               >
                 {e}
               </button>
@@ -321,14 +320,16 @@ export function ChatPanel({
       )}
 
       {/* Input */}
-      <div className="p-3 border-t border-white/5">
+      <div className="p-3 border-t border-line">
         <div className="flex items-end gap-2">
           <div className="relative">
             <button
               onClick={() => setShowEmoji((v) => !v)}
-              className="p-2 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+              aria-label="Choose an emoji"
+              aria-expanded={showEmoji}
+              className="button button-secondary !px-2"
             >
-              <Smile size={20} />
+              <Smile size={16} />
             </button>
           </div>
           <textarea
@@ -338,16 +339,17 @@ export function ChatPanel({
             rows={1}
             maxLength={500}
             placeholder={slowModeRemaining > 0 ? `Wait ${slowModeRemaining}s…` : 'Type a message…'}
+            aria-label="Chat message"
             disabled={slowModeRemaining > 0}
-            className="flex-1 px-3 py-2.5 rounded-xl bg-[#141521] border border-white/10 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-[#a89fff] resize-none max-h-24 disabled:opacity-50"
-            style={{ minHeight: '42px' }}
+            className="field max-h-24 min-w-0 flex-1 resize-none disabled:opacity-50"
           />
           <button
             onClick={handleSend}
+            aria-label="Send message"
             disabled={!canSend}
-            className="p-2.5 rounded-xl bg-[#6655e8] text-white hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="button button-primary !px-2.5"
           >
-            <Send size={18} />
+            <Send size={16} />
           </button>
         </div>
       </div>
