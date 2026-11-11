@@ -148,12 +148,13 @@ export function ChatMessage({
         )}
 
         {showReactions && (
-          <div className="absolute right-0 top-7 z-20 grid grid-cols-5 gap-1 rounded-md border border-line bg-surface p-1.5 shadow-md">
+          <div role="group" aria-label="Message reactions" className="reaction-picker-grid absolute right-0 top-7 z-20 rounded-xl border border-line bg-surface shadow-md">
             {REACTION_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
+                aria-label={`React with ${emoji}`}
                 onClick={() => { onToggleReaction(message.id, emoji); setShowReactions(false); }}
-                className="grid size-8 place-items-center rounded-md text-sm hover:bg-subtle"
+                className="reaction-emoji-button hover:bg-accent-soft"
               >
                 {emoji}
               </button>

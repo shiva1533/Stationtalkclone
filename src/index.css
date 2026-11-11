@@ -233,6 +233,26 @@
   overflow: hidden;
 }
 
+.reaction-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  width: 258px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+}
+
+.reaction-emoji-button {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px;
+  border-radius: 10px;
+  font-size: 20px;
+  line-height: 1;
+}
+
 /* Responsive community directory */
 
 .page-width {
