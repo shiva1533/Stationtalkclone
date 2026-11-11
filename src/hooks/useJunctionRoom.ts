@@ -26,6 +26,7 @@ export function useJunctionRoom(junctionId: string | null, session: Session | nu
 
   const joinRoom = useCallback(async () => {
     if (!junctionId || !session) return;
+    await supabase.rpc('purge_junction_chat_if_empty', { p_junction_id: junctionId });
     const { data: existing } = await supabase
       .from('participants')
       .select('*')
@@ -160,6 +161,7 @@ export function useJunctionRoom(junctionId: string | null, session: Session | nu
       .eq('junction_id', junctionId)
       .eq('session_id', session.sessionId);
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    await supabase.rpc('purge_junction_chat_if_empty', { p_junction_id: junctionId });
     refreshParticipants();
   }, [junctionId, session, refreshParticipants]);
 
