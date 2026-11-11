@@ -4,15 +4,19 @@ import { supabase } from '@/lib/supabase';
 import { AVATAR_EMOJIS, AVATAR_COLORS, randomNickname, randomAvatar } from '@/lib/constants';
 import { Shuffle, Check } from 'lucide-react';
 import { Avatar } from './Avatar';
+import { Dialog } from './Dialog';
 
 interface NicknameModalProps {
   open: boolean;
   session: Session;
   onConfirm: (s: Session) => void;
   onCancel: () => void;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
 }
 
-export function NicknameModal({ open, session, onConfirm, onCancel }: NicknameModalProps) {
+export function NicknameModal({ open, session, onConfirm, onCancel, title = 'Join as a guest', description = 'Choose how you’ll appear to others in the room.', confirmLabel = 'Join room' }: NicknameModalProps) {
   const [nickname, setNickname] = useState(session.nickname);
   const [emoji, setEmoji] = useState(session.avatarEmoji);
   const [color, setColor] = useState(session.avatarColor);
@@ -65,11 +69,10 @@ export function NicknameModal({ open, session, onConfirm, onCancel }: NicknameMo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/35 animate-in fade-in duration-200">
-      <section role="dialog" aria-modal="true" aria-labelledby="nickname-title" className="dialog space-y-4">
+    <Dialog titleId="nickname-title" onClose={onCancel}>
         <div className="space-y-1">
-          <h2 id="nickname-title" className="text-base font-semibold">Join as a guest</h2>
-          <p className="text-sm text-muted">Choose how you’ll appear to others in the room.</p>
+          <h2 id="nickname-title" className="text-base font-semibold">{title}</h2>
+          <p className="text-sm text-muted">{description}</p>
         </div>
 
         {/* Preview */}
@@ -159,11 +162,10 @@ export function NicknameModal({ open, session, onConfirm, onCancel }: NicknameMo
             disabled={taken || nickname.trim().length < 2}
             className="button button-primary flex-1"
           >
-            Join room
+            {confirmLabel}
           </button>
         </div>
-      </section>
-    </div>
+    </Dialog>
   );
 }
 

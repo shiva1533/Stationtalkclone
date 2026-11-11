@@ -21,7 +21,7 @@ export function Avatar({ emoji, color, size = 'md', speaking, ring }: AvatarProp
       style={{
         backgroundColor: `${color}22`,
         borderColor: `${color}55`,
-        boxShadow: speaking ? '0 0 0 2px #285d52' : ring ? `0 0 0 1px ${color}` : 'none',
+        boxShadow: speaking ? '0 0 0 2px #16A34A' : ring ? `0 0 0 1px ${color}` : 'none',
       }}
     >
       <span className="leading-none">{emoji}</span>

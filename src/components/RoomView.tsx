@@ -360,7 +360,7 @@ function ControlButton({ active, onClick, icon, label }: { active: boolean; onCl
 
 function MobileTabButton({ active, onClick, icon, label, count }: { active: boolean; onClick: () => void; icon: ReactNode; label: string; count?: number }) {
   return (
-    <button onClick={onClick} aria-pressed={active} className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 border-b-2 text-sm font-medium focus-visible:outline-offset-[-3px] ${active ? 'border-accent text-accent' : 'border-transparent text-muted'}`}>
+    <button onClick={onClick} aria-label={label} aria-pressed={active} className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 border-b-2 text-sm font-medium focus-visible:outline-offset-[-3px] ${active ? 'border-accent text-accent' : 'border-transparent text-muted'}`}>
       {icon}{label}{count ? <span className="text-xs">({count})</span> : null}
     </button>
   );

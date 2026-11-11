@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useSession } from '@/context/SessionContext';
 import { CATEGORY_META } from '@/lib/constants';
+import { Dialog } from './Dialog';
 import type { JunctionCategory } from '@/types';
 
 interface CreateJunctionModalProps {
@@ -48,8 +49,7 @@ export function CreateJunctionModal({ onClose, onCreated }: CreateJunctionModalP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/35 animate-in fade-in duration-200">
-      <section role="dialog" aria-modal="true" aria-labelledby="create-room-title" className="dialog space-y-4">
+    <Dialog titleId="create-room-title" onClose={onClose}>
         <div className="flex items-center justify-between">
           <h2 id="create-room-title" className="text-base font-semibold">Create a room</h2>
           <button onClick={onClose} aria-label="Close create room" className="button button-secondary !px-2">
@@ -111,7 +111,6 @@ export function CreateJunctionModal({ onClose, onCreated }: CreateJunctionModalP
         >
           {creating ? 'Creating…' : 'Create and enter'}
         </button>
-      </section>
-    </div>
+    </Dialog>
   );
 }

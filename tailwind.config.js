@@ -4,18 +4,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: '#f7f8f6',
-        surface: '#ffffff',
-        subtle: '#eef1ef',
-        line: '#dce3df',
-        outline: '#a8b5af',
-        ink: '#1f2b28',
-        muted: '#52635c',
+        canvas: '#FCFBFF',
+        surface: '#FFFFFF',
+        subtle: '#F8F5FE',
+        line: '#EEEAF5',
+        outline: '#D4C9E5',
+        ink: '#17152F',
+        muted: '#62627A',
+        success: '#16A34A',
         accent: {
-          DEFAULT: '#285d52',
-          hover: '#1b483e',
-          soft: '#e7f1ed',
-          line: '#a4c2b8',
+          DEFAULT: '#7029D9',
+          hover: '#6020BC',
+          secondary: '#8B5CF6',
+          soft: '#F3ECFF',
+          line: '#DFCDF8',
         },
         danger: {
           DEFAULT: '#9a3435',
@@ -24,6 +26,9 @@ export default {
           line: '#e3b6b2',
         },
         warning: '#815716',
+      },
+      boxShadow: {
+        soft: '0 4px 20px rgba(58, 30, 95, 0.035)',
       },
     },
   },
