@@ -370,9 +370,9 @@ function ReactionPicker({ open, onToggle, onSelect }: { open: boolean; onToggle:
   return (
     <div className="relative">
       {open && (
-        <div role="group" aria-label="Room reactions" className="reaction-picker-grid absolute bottom-full right-0 z-30 mb-2 rounded-xl border border-line bg-surface shadow-md">
+        <div className="absolute bottom-full right-0 z-30 mb-2 grid grid-cols-5 gap-1 rounded-lg border border-line bg-surface p-2 shadow-md">
           {REACTION_EMOJIS.map((emoji) => (
-            <button key={emoji} aria-label={`React with ${emoji}`} onClick={() => onSelect(emoji)} className="reaction-emoji-button hover:bg-accent-soft">{emoji}</button>
+            <button key={emoji} onClick={() => onSelect(emoji)} className="grid size-9 place-items-center rounded-md text-base hover:bg-subtle">{emoji}</button>
           ))}
         </div>
       )}
