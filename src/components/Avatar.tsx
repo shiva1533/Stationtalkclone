@@ -3,6 +3,7 @@ interface AvatarProps {
   color: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   speaking?: boolean;
+  speakingColor?: string;
   ring?: boolean;
 }
 
@@ -14,14 +15,14 @@ const SIZES: Record<NonNullable<AvatarProps['size']>, string> = {
   xl: 'w-20 h-20 text-4xl',
 };
 
-export function Avatar({ emoji, color, size = 'md', speaking, ring }: AvatarProps) {
+export function Avatar({ emoji, color, size = 'md', speaking, speakingColor = '#16A34A', ring }: AvatarProps) {
   return (
     <div
       className={`grid shrink-0 place-items-center rounded-full border transition-shadow ${SIZES[size]}`}
       style={{
         backgroundColor: `${color}22`,
         borderColor: `${color}55`,
-        boxShadow: speaking ? '0 0 0 2px #16A34A' : ring ? `0 0 0 1px ${color}` : 'none',
+        boxShadow: speaking ? `0 0 0 2px ${speakingColor}` : ring ? `0 0 0 1px ${color}` : 'none',
       }}
     >
       <span className="leading-none">{emoji}</span>

@@ -61,10 +61,10 @@ export function ChatMessage({
   }, {});
 
   return (
-    <div className="flex gap-2.5 px-3 py-1.5 transition-colors hover:bg-subtle">
+    <div className={`chat-message ${isOwn ? 'is-own' : ''}`}>
       <Avatar emoji={message.avatar_emoji} color={message.avatar_color} size="sm" />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+      <div className="chat-message-content">
+        <div className="chat-message-meta">
           <span className="min-w-0 truncate text-sm font-medium">
             {message.nickname}
             {isOwn && <span className="text-muted ml-1 text-xs">(you)</span>}
@@ -80,7 +80,7 @@ export function ChatMessage({
           </div>
         )}
 
-        <p className="text-sm text-ink break-words leading-relaxed">{message.content}</p>
+        <p className="chat-message-bubble">{message.content}</p>
 
         {/* Reactions */}
         {Object.keys(grouped).length > 0 && (
@@ -104,12 +104,12 @@ export function ChatMessage({
       </div>
 
       {/* Action button */}
-      <div className="relative" ref={menuRef}>
+      <div className="message-actions" ref={menuRef}>
         <button
           onClick={() => setShowActions((v) => !v)}
           aria-label="Message actions"
           aria-expanded={showActions}
-          className="grid size-7 place-items-center rounded text-muted hover:bg-surface hover:text-ink"
+          className="room-icon-button"
         >
           <MoreVertical size={14} />
         </button>
@@ -148,12 +148,13 @@ export function ChatMessage({
         )}
 
         {showReactions && (
-          <div className="absolute right-0 top-7 z-20 grid grid-cols-5 gap-1 rounded-md border border-line bg-surface p-1.5 shadow-md">
+          <div role="group" aria-label="Message reactions" className="reaction-picker-grid message-reaction-picker">
             {REACTION_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
+                aria-label={`React with ${emoji}`}
                 onClick={() => { onToggleReaction(message.id, emoji); setShowReactions(false); }}
-                className="grid size-8 place-items-center rounded-md text-sm hover:bg-subtle"
+                className="reaction-emoji-button"
               >
                 {emoji}
               </button>

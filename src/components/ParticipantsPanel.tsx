@@ -37,8 +37,8 @@ export function ParticipantsPanel({ participants, mutedSessions, blockedSessions
     const isMuted = mutedSessions.has(participant.session_id);
     const isBlocked = blockedSessions.has(participant.session_id);
     return (
-      <div key={participant.id} className={`group relative flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors ${participant.is_speaking ? 'bg-accent-soft' : 'hover:bg-subtle'}`}>
-        <Avatar emoji={participant.avatar_emoji} color={participant.avatar_color} size="sm" speaking={participant.is_speaking} />
+      <div key={participant.id} className={`people-row ${participant.is_speaking ? 'is-speaking' : ''}`}>
+        <Avatar emoji={participant.avatar_emoji} color={participant.avatar_color} size="md" speaking={participant.is_speaking} speakingColor="#8B5CF6" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="truncate text-sm font-medium text-ink">{participant.nickname}</span>
@@ -52,7 +52,7 @@ export function ParticipantsPanel({ participants, mutedSessions, blockedSessions
         </div>
 
         {!isOwn && <div className="relative" ref={menuFor === participant.id ? menuRef : undefined}>
-          <button onClick={() => setMenuFor(menuFor === participant.id ? null : participant.id)} className="rounded-lg p-1.5 text-muted transition-colors hover:bg-subtle hover:text-ink" aria-label={`Actions for ${participant.nickname}`}>
+          <button onClick={() => setMenuFor(menuFor === participant.id ? null : participant.id)} className="room-icon-button" aria-label={`Actions for ${participant.nickname}`}>
             <MoreVertical size={16} />
           </button>
           {menuFor === participant.id && <div className="absolute right-0 top-9 z-30 min-w-40 rounded-md border border-line bg-surface p-1.5 shadow-lg">
@@ -69,15 +69,21 @@ export function ParticipantsPanel({ participants, mutedSessions, blockedSessions
   };
 
   return (
-    <div className="flex h-full flex-col bg-surface">
-      <div className="flex min-h-12 shrink-0 items-center justify-between border-b border-line px-4">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-ink"><Users size={16} className="text-muted" /> People ({participants.length})</h3>
+    <section className="room-people">
+      <div className="room-panel-heading">
+        <h2 className="flex items-center gap-2"><Users size={16} className="text-accent" /> People ({participants.length})</h2>
         {onClose && <button onClick={onClose} className="rounded p-1 text-muted hover:text-ink"><X size={18} /></button>}
       </div>
-      <div className="flex-1 space-y-4 overflow-y-auto p-2">
-        {inVoice.length > 0 && <div><p className="mb-1.5 flex items-center gap-1.5 px-3 text-xs font-medium text-muted"><Volume2 size={11} /> In voice ({inVoice.length})</p><div className="space-y-0.5">{inVoice.map(renderParticipant)}</div></div>}
-        <div><p className="mb-1.5 px-3 text-xs font-medium text-muted">Listening ({listeners.length})</p><div className="space-y-0.5">{listeners.map(renderParticipant)}</div></div>
+      <div className="people-list">
+        <div className="people-group">
+          <h3><Volume2 size={12} /> IN VOICE <span>({inVoice.length})</span></h3>
+          {inVoice.map(renderParticipant)}
+        </div>
+        <div className="people-group">
+          <h3><Headphones size={12} /> LISTENING <span>({listeners.length})</span></h3>
+          {listeners.map(renderParticipant)}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

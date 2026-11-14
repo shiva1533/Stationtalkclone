@@ -6,5 +6,6 @@ if (!supabaseConfig) {
 }
 
 export const supabase = createClient(supabaseConfig.url, supabaseConfig.key, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   realtime: { params: { eventsPerSecond: 20 } },
 });

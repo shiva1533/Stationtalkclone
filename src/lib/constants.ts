@@ -34,7 +34,7 @@ export const NICKNAME_ANIMALS = [
   'Koala', 'Falcon', 'Whale', 'Lynx', 'Bear', 'Hawk', 'Cat', 'Raven',
 ];
 
-export const REACTION_EMOJIS = ['👍', '👏', '😂', '❤️', '🔥', '🎉', '😮', '🤔', '🙌', '💯'];
+export const REACTION_EMOJIS = ['👍', '👏', '😂', '❤️', '🔥', '🎉', '😮', '🤔', '🙌', '💯', '😭', '😢'];
 
 export const HEARTBEAT_INTERVAL_MS = 25_000;
 export const PRESENCE_TIMEOUT_MS = 90_000;

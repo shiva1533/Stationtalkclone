@@ -256,7 +256,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  min-height: 84px;
+  min-height: 72px;
 }
 
 .brand {
@@ -414,30 +414,30 @@ summary::-webkit-details-marker {
 }
 
 .community-main {
-  padding-top: 28px;
+  padding-top: 14px;
 }
 
 .community-hero {
   display: grid;
   grid-template-columns: 1.25fr 1fr;
   align-items: center;
-  min-height: 300px;
-  padding: 10px 56px 24px 22px;
-  gap: 56px;
+  min-height: 210px;
+  padding: 4px 36px 16px 18px;
+  gap: 36px;
 }
 
 .hero-eyebrow {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 15px;
+  margin-bottom: 8px;
   color: #62627A;
   font-size: 11px;
   font-weight: 500;
 }
 
 .hero-copy h1 {
-  font-size: clamp(36px, 3.3vw, 50px);
+  font-size: clamp(34px, 3vw, 43px);
   line-height: 1.16;
   font-weight: 750;
   letter-spacing: -2px;
@@ -452,16 +452,16 @@ summary::-webkit-details-marker {
 }
 
 .hero-subtitle {
-  max-width: 370px;
-  margin-top: 13px;
+  max-width: 430px;
+  margin-top: 8px;
   color: #62627A;
-  font-size: 14px;
-  line-height: 1.8;
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .random-room-button {
-  margin-top: 23px;
-  min-height: 45px;
+  margin-top: 13px;
+  min-height: 42px;
   gap: 10px;
   padding-inline: 18px;
   border: 1px solid rgba(112, 41, 217, .15);
@@ -479,7 +479,7 @@ summary::-webkit-details-marker {
 }
 
 .hero-caption {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 6px;
   margin-top: 12px;
@@ -491,13 +491,13 @@ summary::-webkit-details-marker {
   display: grid;
   place-items: center;
   position: relative;
-  height: 280px;
+  height: 192px;
 }
 
 .headphone-halo {
   position: absolute;
-  width: 244px;
-  height: 244px;
+  width: 174px;
+  height: 174px;
   border: 1px solid #EEEAF5;
   border-radius: 50%;
   background: #F3ECFF;
@@ -505,8 +505,8 @@ summary::-webkit-details-marker {
 
 .hero-art img {
   position: relative;
-  width: 278px;
-  height: 278px;
+  width: 192px;
+  height: 192px;
   object-fit: contain;
   transform: rotate(-11deg);
 }
@@ -515,7 +515,7 @@ summary::-webkit-details-marker {
   position: absolute;
   bottom: 9px;
   right: 0;
-  display: flex;
+  display: none;
   align-items: center;
   gap: 6px;
   padding: 9px 12px;
@@ -535,8 +535,8 @@ summary::-webkit-details-marker {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 28px;
-  padding-block: 18px;
+  gap: 20px;
+  padding-block: 12px;
   border-top: 1px solid #EEEAF5;
 }
 
@@ -553,7 +553,7 @@ summary::-webkit-details-marker {
   gap: 11px;
   min-width: 0;
   flex: 1;
-  min-height: 48px;
+  min-height: 44px;
   padding-inline: 15px;
   border: 1px solid #EEEAF5;
   border-radius: 12px;
@@ -573,7 +573,7 @@ summary::-webkit-details-marker {
 .directory-search input {
   width: 100%;
   min-width: 0;
-  height: 46px;
+  height: 42px;
   color: #17152F;
   background: transparent;
   font-size: 12px;
@@ -599,7 +599,7 @@ summary::-webkit-details-marker {
 }
 
 .filter-button {
-  min-height: 48px;
+  min-height: 44px;
   gap: 8px;
   padding-inline: 14px;
   border-radius: 12px;
@@ -654,9 +654,9 @@ summary::-webkit-details-marker {
 .category-scroll {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   overflow-x: auto;
-  padding: 2px 2px 8px;
+  padding: 2px 2px 5px;
   scrollbar-width: none;
 }
 
@@ -668,10 +668,10 @@ summary::-webkit-details-marker {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 40px;
+  gap: 6px;
+  min-height: 36px;
   flex-shrink: 0;
-  padding-inline: 17px;
+  padding-inline: 14px;
   border: 1px solid #EEEAF5;
   border-radius: 11px;
   color: #62627A;
@@ -694,8 +694,8 @@ summary::-webkit-details-marker {
 .room-sections {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  padding-top: 22px;
+  gap: 24px;
+  padding-top: 15px;
 }
 
 .section-heading {
@@ -703,7 +703,7 @@ summary::-webkit-details-marker {
   align-items: center;
   justify-content: space-between;
   gap: 15px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .section-heading h2 {
@@ -723,6 +723,7 @@ summary::-webkit-details-marker {
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 1.1px;
+  display: none;
 }
 
 .section-dot {
@@ -739,7 +740,7 @@ summary::-webkit-details-marker {
 
 .featured-room-list {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .room-grid {
@@ -1070,13 +1071,15 @@ summary::-webkit-details-marker {
   }
 
   .community-main {
-    padding-top: 18px;
-    padding-bottom: calc(98px + env(safe-area-inset-bottom, 0px));
+    padding-top: 8px;
+    padding-bottom: 16px;
   }
 
   .header-inner {
-    min-height: 66px;
-    gap: 7px;
+    min-height: 58px;
+    gap: 4px 7px;
+    flex-wrap: wrap;
+    padding-block: 8px 5px;
   }
 
   .brand {
@@ -1112,7 +1115,10 @@ summary::-webkit-details-marker {
   }
 
   .header-desktop-nav {
-    display: none;
+    display: block;
+    order: 3;
+    width: 100%;
+    margin-left: 0;
   }
 
   .header-actions {
@@ -1164,10 +1170,10 @@ summary::-webkit-details-marker {
   }
 
   .community-hero {
-    grid-template-columns: minmax(0,1fr) clamp(105px, 30vw, 132px);
-    min-height: 196px;
+    grid-template-columns: minmax(0,1fr) 96px;
+    min-height: 142px;
     gap: 4px;
-    padding: 10px 0 21px;
+    padding: 4px 0 12px;
   }
 
   .hero-eyebrow {
@@ -1186,14 +1192,14 @@ summary::-webkit-details-marker {
     position: relative;
     z-index: 1;
     max-width: 230px;
-    margin-top: 11px;
+    margin-top: 7px;
     font-size: 12px;
-    line-height: 1.7;
+    line-height: 1.55;
   }
 
   .random-room-button {
-    margin-top: 16px;
-    min-height: 39px;
+    margin-top: 10px;
+    min-height: 38px;
     padding-inline: 12px;
     gap: 7px;
     border-radius: 10px;
@@ -1216,19 +1222,19 @@ summary::-webkit-details-marker {
   }
 
   .hero-art {
-    height: 160px;
+    height: 118px;
   }
 
   .hero-art img {
-    width: 138px;
+    width: 100px;
     max-width: 100%;
     height: auto;
     transform: rotate(-9deg);
   }
 
   .headphone-halo {
-    width: 126px;
-    height: 126px;
+    width: 98px;
+    height: 98px;
   }
 
   .hero-art-label {
@@ -1237,10 +1243,10 @@ summary::-webkit-details-marker {
 
   .directory-toolbar {
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
     align-items: stretch;
-    padding-top: 16px;
-    padding-bottom: 18px;
+    padding-top: 11px;
+    padding-bottom: 12px;
   }
 
   .search-controls {
@@ -1249,14 +1255,14 @@ summary::-webkit-details-marker {
   }
 
   .directory-search {
-    min-height: 44px;
+    min-height: 42px;
     padding-inline: 12px;
     gap: 8px;
     border-radius: 11px;
   }
 
   .directory-search input {
-    height: 42px;
+    height: 40px;
     font-size: 12px;
   }
 
@@ -1265,8 +1271,8 @@ summary::-webkit-details-marker {
   }
 
   .filter-button {
-    min-height: 44px;
-    width: 44px;
+    min-height: 42px;
+    width: 42px;
     padding: 0;
     border-radius: 11px;
     gap: 3px;
@@ -1291,15 +1297,15 @@ summary::-webkit-details-marker {
   }
 
   .category-scroll {
-    gap: 7px;
+    gap: 6px;
     margin-right: -16px;
     padding-right: 16px;
   }
 
   .category-chip {
     gap: 6px;
-    min-height: 40px;
-    padding-inline: 12px;
+    min-height: 36px;
+    padding-inline: 11px;
     border-radius: 10px;
     font-size: 12px;
   }
@@ -1310,12 +1316,12 @@ summary::-webkit-details-marker {
   }
 
   .room-sections {
-    padding-top: 17px;
-    gap: 25px;
+    padding-top: 12px;
+    gap: 20px;
   }
 
   .section-heading {
-    margin-bottom: 12px;
+    margin-bottom: 9px;
     gap: 8px;
   }
 
@@ -1450,5 +1456,84 @@ summary::-webkit-details-marker {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+}
+
+.community-page .room-card {
+  padding: 13px;
+  column-gap: 12px;
+  row-gap: 10px;
+}
+
+.community-page .room-card-featured {
+  grid-template-columns: 104px minmax(0,1fr) 108px;
+  column-gap: 18px;
+  padding: 14px;
+}
+
+.community-page .room-card-featured .room-thumbnail {
+  width: 104px;
+  height: 88px;
+}
+
+.community-page .room-card-featured .room-members {
+  margin-top: 8px;
+}
+
+.community-page .room-card-featured .room-description {
+  margin-top: 5px;
+}
+
+.community-page .room-card h3 {
+  font-size: 14px;
+}
+
+.community-page .room-card-featured h3 {
+  font-size: 16px;
+}
+
+@media (max-width: 767px) {
+
+  .header-desktop-nav .desktop-navigation {
+    justify-content: space-between;
+    gap: 0;
+  }
+
+  .header-desktop-nav .community-nav-item {
+    flex: 1;
+    min-width: 0;
+    min-height: 30px;
+    gap: 4px;
+    padding: 4px 3px;
+    font-size: 11px;
+  }
+
+  .header-desktop-nav .community-nav-item svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .community-page .room-card, .community-page .room-card-featured {
+    grid-template-columns: 64px minmax(0,1fr);
+    column-gap: 10px;
+    row-gap: 8px;
+    padding: 11px;
+  }
+
+  .community-page .room-thumbnail, .community-page .room-card-featured .room-thumbnail {
+    width: 64px;
+    height: 78px;
+  }
+
+  .community-page .room-card h3, .community-page .room-card-featured h3 {
+    font-size: 13px;
+  }
+
+  .community-page .room-card-actions, .community-page .room-card-featured .room-card-actions {
+    padding-top: 8px;
+  }
+
+  .community-page .featured-room-list, .community-page .room-grid {
+    gap: 10px;
   }
 }

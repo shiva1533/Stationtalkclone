@@ -2,10 +2,9 @@ import { useMemo, useRef, useState } from 'react';
 import { ArrowRight, Headphones, MessageCircle, Radio, Search, Shuffle, UsersRound, X } from 'lucide-react';
 import { useJunctions } from '@/hooks/useJunctions';
 import { useSession } from '@/context/SessionContext';
-import { saveSession } from '@/lib/session';
 import { JunctionCard } from './JunctionCard';
 import { CommunityHeader } from './CommunityHeader';
-import { CommunityNavigation, type CommunityView } from './CommunityNavigation';
+import type { CommunityView } from './CommunityNavigation';
 import { CategoryNavigation, RoomFilterMenu, type RoomCategoryFilter } from './RoomFilters';
 import { CreateJunctionModal } from './CreateJunctionModal';
 import { NicknameModal } from './NicknameModal';
@@ -158,9 +157,8 @@ export function LandingPage({ onJoin }: LandingPageProps) {
         <footer className="community-footer"><img src="/junction.svg" alt="" width="23" height="23" /><span>A place to talk. A place to belong.</span><span className="footer-note">Junction · Live voice & chat</span></footer>
       </main>
 
-      <CommunityNavigation active={view} onNavigate={navigate} onProfile={() => setShowProfile(true)} mobile />
       {showCreate && <CreateJunctionModal onClose={() => setShowCreate(false)} onCreated={(slug) => { setShowCreate(false); onJoin(slug); }} />}
-      {showProfile && session && <NicknameModal open session={session} title="Your profile" description="Your name and avatar in the Junction community." confirmLabel="Save profile" onCancel={() => setShowProfile(false)} onConfirm={(updated) => { setSession(updated); saveSession(updated); setShowProfile(false); }} />}
+      {showProfile && session && <NicknameModal open session={session} title="Your profile" description="Your name and avatar in the Junction community." confirmLabel="Save profile" onCancel={() => setShowProfile(false)} onConfirm={async (updated) => { await setSession(updated); setShowProfile(false); }} />}
     </div>
   );
 }

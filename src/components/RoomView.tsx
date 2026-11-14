@@ -1,25 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Compass, Headphones, HeadphoneOff, Mic, MicOff, MessageSquare, PhoneOff, Smile, Users, Volume2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Compass, Headphones, HeadphoneOff, Mic, MicOff, MessageSquare, Minimize2, PhoneOff, Smile, Users, Volume2, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Junction, Message, Participant, Session } from '@/types';
-import { supabase } from '@/lib/supabase';
-import { useJunctionRoom } from '@/hooks/useJunctionRoom';
+import { useSession } from '@/context/SessionContext';
+import { useActiveRoom } from '@/context/ActiveRoomContext';
 import { useJunctions, type JunctionParticipantPreview } from '@/hooks/useJunctions';
-import { VoiceManager } from '@/lib/voice';
 import { CATEGORY_META, REACTION_EMOJIS } from '@/lib/constants';
 import { Avatar } from './Avatar';
 import { ChatPanel } from './ChatPanel';
 import { JunctionCard } from './JunctionCard';
 import { ParticipantsPanel } from './ParticipantsPanel';
-
-interface RoomViewProps {
-  junction: Junction;
-  session: Session;
-  onLeave: () => void;
-  onExplore: (slug: string) => void;
-}
-
-const MAX_VOICE_PARTICIPANTS = 10;
+import '@/room.css';
 
 type ExploreJunction = Junction & {
   online_count: number;
@@ -27,260 +18,205 @@ type ExploreJunction = Junction & {
   participants: JunctionParticipantPreview[];
 };
 
-type FloatingReaction = {
-  id: string;
-  emoji: string;
-  x: number;
-  sessionId: string;
-  nickname: string;
-};
-
-export function RoomView({ junction, session, onLeave, onExplore }: RoomViewProps) {
-  const { participants, messages, reactions, loading, sendMessage, toggleReaction, updateVoiceState, leaveRoom, reportUser } = useJunctionRoom(junction.id, session);
+export function RoomView() {
+  const {
+    junction, participants, messages, reactions, loading, joined, error,
+    sendMessage, toggleReaction, reportUser, inVoice, micMuted, speakerOn,
+    setSpeakerOn, joiningVoice, voiceError, setVoiceError, speakingStates,
+    blockedSessions, mutedSessions, notificationsMuted, setNotificationsMuted,
+    chatPopups, floatingReactions, joinVoice, leaveVoice, moveToListening,
+    enableAudio, autoplayBlocked, audioEnabled, connectionState, isBlocked,
+    toggleMic, toggleMute, handleBlock, unblockUser, sendReaction,
+    backToExplore: handleLeave, minimizeRoom, openRoom: onExplore,
+  } = useActiveRoom();
+  const { session } = useSession();
   const { junctions: exploreJunctions } = useJunctions();
-  const [inVoice, setInVoice] = useState(false);
-  const [micMuted, setMicMuted] = useState(true);
-  const [speakerOn, setSpeakerOn] = useState(true);
+  const [failedThumbnail, setFailedThumbnail] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<'stage' | 'chat' | 'people'>('stage');
-  const [voiceError, setVoiceError] = useState('');
-  const [notificationsMuted, setNotificationsMuted] = useState(false);
-  const [blockedSessions, setBlockedSessions] = useState<Set<string>>(new Set());
-  const [mutedSessions, setMutedSessions] = useState<Set<string>>(new Set());
-  const [reportTarget, setReportTarget] = useState<{ sessionId: string; nickname: string } | null>(null);
-  const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
-  const [chatPopups, setChatPopups] = useState<Message[]>([]);
   const [showExplore, setShowExplore] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
-  const [speakingStates, setSpeakingStates] = useState<Record<string, boolean>>({});
-  const voiceManagerRef = useRef<VoiceManager | null>(null);
-  const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
-  const reactionChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const lastMessageIdRef = useRef<string | null>(null);
-  const speakingSyncRef = useRef<boolean | null>(null);
-  const cat = CATEGORY_META[junction.category];
-  const me = participants.find((participant) => participant.session_id === session.sessionId);
+  const [reportTarget, setReportTarget] = useState<{ sessionId: string; nickname: string } | null>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('blocks').select('blocked_session_id').eq('blocker_session_id', session.sessionId);
-      setBlockedSessions(new Set((data ?? []).map((row) => row.blocked_session_id as string)));
-    })();
-  }, [session.sessionId]);
-
-  useEffect(() => {
-    const channel = supabase.channel(`room-reactions:${junction.id}`, { config: { broadcast: { self: true } } });
-    channel.on('broadcast', { event: 'reaction' }, (payload) => {
-      const reaction = payload.payload as FloatingReaction;
-      setFloatingReactions((current) => [...current, reaction]);
-      window.setTimeout(() => setFloatingReactions((current) => current.filter((item) => item.id !== reaction.id)), 4200);
-    });
-    channel.subscribe();
-    reactionChannelRef.current = channel;
-    return () => {
-      supabase.removeChannel(channel);
-      reactionChannelRef.current = null;
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const resize = () => {
+      viewportRef.current?.style.setProperty('--room-viewport-height', viewport.height + 'px');
+      viewportRef.current?.style.setProperty('--room-viewport-top', viewport.offsetTop + 'px');
     };
-  }, [junction.id]);
-
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const latest = messages[messages.length - 1];
-    if (!lastMessageIdRef.current) {
-      lastMessageIdRef.current = latest.id;
-      return;
-    }
-    if (latest.id !== lastMessageIdRef.current && latest.session_id !== session.sessionId) {
-      setChatPopups((current) => [...current, latest]);
-      window.setTimeout(() => setChatPopups((current) => current.filter((message) => message.id !== latest.id)), 4200);
-    }
-    lastMessageIdRef.current = latest.id;
-  }, [messages, session.sessionId]);
-
-  useEffect(() => {
-    if (!me?.in_voice) return;
-    const speaking = speakingStates[session.sessionId] ?? false;
-    if (speakingSyncRef.current !== speaking) {
-      speakingSyncRef.current = speaking;
-      updateVoiceState({ is_speaking: speaking });
-    }
-  }, [me?.in_voice, session.sessionId, speakingStates, updateVoiceState]);
-
-  const handleSpeakingChange = useCallback((sessionId: string, speaking: boolean) => {
-    setSpeakingStates((current) => current[sessionId] === speaking ? current : { ...current, [sessionId]: speaking });
+    resize();
+    viewport.addEventListener('resize', resize);
+    viewport.addEventListener('scroll', resize);
+    return () => {
+      viewport.removeEventListener('resize', resize);
+      viewport.removeEventListener('scroll', resize);
+    };
   }, []);
 
-  const handleRemoteStream = useCallback((sessionId: string, stream: MediaStream) => {
-    let audio = audioElementsRef.current.get(sessionId);
-    if (!audio) {
-      audio = new Audio();
-      audio.autoplay = true;
-      audio.srcObject = stream;
-      audioElementsRef.current.set(sessionId, audio);
-    }
-    audio.muted = mutedSessions.has(sessionId);
-    audio.play().catch(() => {});
-  }, [mutedSessions, speakerOn]);
-
-  const handlePeerLeft = useCallback((sessionId: string) => {
-    const audio = audioElementsRef.current.get(sessionId);
-    if (audio) {
-      audio.srcObject = null;
-      audioElementsRef.current.delete(sessionId);
-    }
-    setSpeakingStates((current) => {
-      const next = { ...current };
-      delete next[sessionId];
-      return next;
-    });
-  }, []);
-
-  useEffect(() => {
-    audioElementsRef.current.forEach((audio, sessionId) => {
-      audio.muted = !speakerOn || mutedSessions.has(sessionId);
-    });
-  }, [mutedSessions, speakerOn]);
-
-  const joinVoice = async () => {
-    if (voiceParticipants.length >= MAX_VOICE_PARTICIPANTS) {
-      setVoiceError('This room already has 10 people in voice. Please wait for a spot to open.');
-      return;
-    }
-    setVoiceError('');
-    try {
-      const voice = new VoiceManager(junction.id, session.sessionId, session.nickname, session.avatarEmoji, {
-        onRemoteStream: handleRemoteStream,
-        onPeerLeft: handlePeerLeft,
-        onPeerJoined: () => {},
-        onSpeakingChange: handleSpeakingChange,
-      });
-      voiceManagerRef.current = voice;
-      await voice.join();
-      voice.setMicMuted(true);
-      setInVoice(true);
-      setMicMuted(true);
-      await updateVoiceState({ in_voice: true, mic_muted: true, is_speaking: false });
-    } catch (error) {
-      setVoiceError(`${error instanceof Error ? error.message : 'Could not access microphone'}. Check browser permissions.`);
-      voiceManagerRef.current?.leave();
-      voiceManagerRef.current = null;
-    }
-  };
-
-  const toggleMic = async () => {
-    const nextMuted = !micMuted;
-    setMicMuted(nextMuted);
-    voiceManagerRef.current?.setMicMuted(nextMuted);
-    await updateVoiceState({ mic_muted: nextMuted, is_speaking: false });
-  };
-
-  const sendReaction = (emoji: string) => {
-    reactionChannelRef.current?.send({
-      type: 'broadcast',
-      event: 'reaction',
-      payload: { id: `${session.sessionId}-${Date.now()}`, emoji, x: Math.random() * 62 + 18, sessionId: session.sessionId, nickname: session.nickname },
-    });
-  };
-
-  const unblockUser = async (sessionId: string) => {
-    setBlockedSessions((current) => {
-      const next = new Set(current);
-      next.delete(sessionId);
-      return next;
-    });
-    await supabase.from('blocks').delete().eq('blocker_session_id', session.sessionId).eq('blocked_session_id', sessionId);
-  };
-
-  const toggleMute = (sessionId: string) => {
-    setMutedSessions((current) => {
-      const next = new Set(current);
-      if (next.has(sessionId)) next.delete(sessionId); else next.add(sessionId);
-      const audio = audioElementsRef.current.get(sessionId);
-      if (audio) audio.muted = next.has(sessionId);
-      return next;
-    });
-  };
-
-  const handleBlock = async (sessionId: string) => {
-    setBlockedSessions((current) => new Set([...current, sessionId]));
-    await supabase.from('blocks').insert({ blocker_session_id: session.sessionId, blocked_session_id: sessionId });
-  };
-
-  const handleReport = (sessionId: string, nickname: string) => setReportTarget({ sessionId, nickname });
-  const handleLeave = async () => { voiceManagerRef.current?.leave(); await leaveRoom(); onLeave(); };
+  if (!junction || !session) return null;
+  const cat = CATEGORY_META[junction.category];
   const voiceParticipants = participants.filter((participant) => participant.in_voice);
   const listeners = participants.filter((participant) => !participant.in_voice);
   const speakingCount = voiceParticipants.filter((participant) => participant.is_speaking || speakingStates[participant.session_id]).length;
-
-  useEffect(() => () => { voiceManagerRef.current?.leave(); }, []);
+  const handleReport = (sessionId: string, nickname: string) => setReportTarget({ sessionId, nickname });
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden bg-canvas">
-      <header className="z-20 flex shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-md bg-accent-soft text-base" aria-hidden="true">{cat.emoji}</span>
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold">{junction.name}</h1>
-            {junction.description && <p className="truncate text-xs text-muted">{junction.description}</p>}
+    <div ref={viewportRef} className="voice-room">
+      <div className="voice-room-shell">
+        <header className="voice-room-header">
+          <button onClick={handleLeave} className="room-icon-button room-back" aria-label="Back to Explore" title="Back to Explore">
+            <ArrowLeft size={18} />
+            <span className="hidden lg:inline">Back to Explore</span>
+            <span className="lg:hidden">Back</span>
+          </button>
+          <div className="voice-room-thumbnail" aria-hidden="true">
+            {junction.image_url && failedThumbnail !== junction.image_url ? (
+              <img src={junction.image_url} alt="" onError={() => setFailedThumbnail(junction.image_url)} />
+            ) : <span>{cat.emoji}</span>}
           </div>
-        </div>
-        <button onClick={() => setShowExplore(true)} className="button button-secondary shrink-0">
-          <Compass size={16} aria-hidden="true" />
-          <span className="hidden sm:inline">Explore rooms</span><span className="sm:hidden">Explore</span>
-        </button>
-      </header>
+          <div className="voice-room-title">
+            <h1>{junction.name}</h1>
+            {junction.description && <p>{junction.description}</p>}
+          </div>
+          <button onClick={minimizeRoom} className="room-icon-button" aria-label="Minimize room" title="Minimize room">
+            <Minimize2 size={17} />
+          </button>
+          <button onClick={() => setShowExplore(true)} className="button button-secondary room-explore">
+            <Compass size={17} aria-hidden="true" />
+            <span className="hidden sm:inline">Explore rooms</span>
+            <span className="sm:hidden">Explore</span>
+          </button>
+        </header>
 
-      <main className="flex min-h-0 flex-1 overflow-hidden">
-        <div className={`min-w-0 flex-1 flex-col lg:flex ${mobileTab === 'stage' ? 'flex' : 'hidden'}`}>
-          <ParticipantStage voiceParticipants={voiceParticipants} listeners={listeners} participants={participants} session={session} speakingStates={speakingStates} speakingCount={speakingCount} loading={loading} />
-        </div>
-        <div className={`min-w-0 flex-1 flex-col lg:flex lg:max-w-sm lg:border-l lg:border-line ${mobileTab === 'chat' ? 'flex' : 'hidden'}`}>
-          <ChatPanel junctionId={junction.id} messages={messages} reactions={reactions} blockedSessions={blockedSessions} slowModeSeconds={junction.slow_mode_seconds} onSend={sendMessage} onToggleReaction={toggleReaction} onReport={handleReport} onBlock={handleBlock} notificationsMuted={notificationsMuted} onToggleMute={() => setNotificationsMuted((current) => !current)} />
-        </div>
-        <div className={`min-w-0 flex-1 flex-col lg:w-56 lg:flex-none lg:border-l lg:border-line lg:flex ${mobileTab === 'people' ? 'flex' : 'hidden'}`}>
-          <ParticipantsPanel participants={participants} mutedSessions={mutedSessions} blockedSessions={blockedSessions} onMute={toggleMute} onUnblock={unblockUser} onReport={handleReport} onBlock={handleBlock} />
-        </div>
-      </main>
+        <RoomNavigation active={mobileTab} onChange={setMobileTab} count={participants.length} desktop />
 
-      {voiceError && (
-        <div role="alert" className="absolute inset-x-4 top-20 z-50 mx-auto flex max-w-md items-center gap-3 rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm text-danger">
-          <span className="flex-1">{voiceError}</span>
-          <button onClick={() => setVoiceError('')} aria-label="Dismiss error" className="rounded p-1"><X size={16} /></button>
-        </div>
-      )}
-      <div className="pointer-events-none fixed bottom-24 left-4 z-40 flex w-64 max-w-[calc(100%-2rem)] flex-col gap-2">
-        {chatPopups.map((message) => <ChatPopup key={message.id} message={message} />)}
-      </div>
-      {floatingReactions.map((reaction) => (
-        <div key={reaction.id} className="animate-junction-reaction pointer-events-none fixed bottom-24 z-50 flex flex-col items-center" style={{ left: `${reaction.x}%` }}>
-          <span className="text-3xl">{reaction.emoji}</span>
-          <span className="mt-1 rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted">{reaction.nickname}</span>
-        </div>
-      ))}
+        <main className="voice-room-content" data-view={mobileTab}>
+          <div className="room-stage-pane">
+            <ParticipantStage
+              voiceParticipants={voiceParticipants}
+              listeners={listeners}
+              participants={participants}
+              session={session}
+              speakingStates={speakingStates}
+              speakingCount={speakingCount}
+              loading={loading}
+            />
+          </div>
+          <div className="room-chat-pane">
+            <ChatPanel
+              junctionId={junction.id}
+              messages={messages}
+              reactions={reactions}
+              blockedSessions={blockedSessions}
+              isBlocked={isBlocked}
+              participants={participants}
+              connected={joined}
+              slowModeSeconds={junction.slow_mode_seconds}
+              onSend={sendMessage}
+              onToggleReaction={toggleReaction}
+              onReport={handleReport}
+              onBlock={handleBlock}
+              notificationsMuted={notificationsMuted}
+              onToggleMute={() => setNotificationsMuted((current) => !current)}
+            />
+          </div>
+          <div className="room-people-pane">
+            <ParticipantsPanel
+              participants={participants}
+              mutedSessions={mutedSessions}
+              blockedSessions={blockedSessions}
+              onMute={toggleMute}
+              onUnblock={unblockUser}
+              onReport={handleReport}
+              onBlock={handleBlock}
+            />
+          </div>
+        </main>
 
-      <footer className="z-20 shrink-0 border-t border-line bg-surface">
-        <div className="flex border-b border-line lg:hidden">
-          <MobileTabButton active={mobileTab === 'stage'} onClick={() => setMobileTab('stage')} icon={<Volume2 size={15} />} label="Stage" count={participants.length} />
-          <MobileTabButton active={mobileTab === 'chat'} onClick={() => setMobileTab('chat')} icon={<MessageSquare size={15} />} label="Chat" />
-          <MobileTabButton active={mobileTab === 'people'} onClick={() => setMobileTab('people')} icon={<Users size={15} />} label="People" count={participants.length} />
+        {(voiceError || error) && (
+          <div role="alert" className="room-voice-error">
+            <span>{voiceError || error}</span>
+            <button onClick={() => setVoiceError('')} aria-label="Dismiss error" className="room-icon-button">
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        <div className="room-chat-popups">
+          {chatPopups.map((message) => <ChatPopup key={message.id} message={message} />)}
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-1.5 px-2 py-2.5 sm:gap-2">
-          {!inVoice ? (
-            <button onClick={joinVoice} className="button button-primary"><Headphones size={16} /> Join voice</button>
-          ) : (
-            <>
-              <ControlButton active={!micMuted} onClick={toggleMic} icon={micMuted ? <MicOff size={16} /> : <Mic size={16} />} label={micMuted ? 'Unmute' : 'Mute'} />
-              <ControlButton active={speakerOn} onClick={() => setSpeakerOn((current) => !current)} icon={speakerOn ? <Headphones size={16} /> : <HeadphoneOff size={16} />} label={speakerOn ? 'Speaker' : 'Muted'} />
-              <button onClick={handleLeave} aria-label="End call" className="button border border-danger-line bg-danger-soft px-2 text-danger hover:bg-danger-line sm:px-3">
-                <PhoneOff size={16} /><span className="hidden sm:inline">End call</span>
+        {floatingReactions.map((reaction) => (
+          <div key={reaction.id} className="animate-junction-reaction room-floating-reaction" style={{ left: `${reaction.x}%` }}>
+            <span className="text-3xl">{reaction.emoji}</span>
+            <span className="mt-1 rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted">{reaction.nickname}</span>
+          </div>
+        ))}
+
+        {(autoplayBlocked || !audioEnabled || connectionState === 'Failed') && (
+          <div className="room-audio-notice">
+            <span>{!audioEnabled ? 'Room audio is off.' : 'Tap to enable room audio.'}</span>
+            <button className="button button-secondary" onClick={() => { void enableAudio(); }}>Enable audio</button>
+          </div>
+        )}
+        <footer className="room-footer">
+          <RoomNavigation active={mobileTab} onChange={setMobileTab} count={participants.length} />
+          <div className="room-call-options">
+            <span role="status">{inVoice ? 'In voice' : 'Listening'} · {audioEnabled ? connectionState : 'Audio off'}</span>
+            {inVoice && <button onClick={() => { void moveToListening().catch((reason: Error) => setVoiceError(reason.message)); }}>Move to Listening</button>}
+          </div>
+          <div className="voice-controls" aria-label="Voice controls" role="group">
+            {!inVoice ? (
+              <button onClick={joinVoice} disabled={joiningVoice || !joined} className="button button-primary room-join-voice">
+                <Headphones size={18} />{joiningVoice ? 'Connecting…' : 'Join voice'}
               </button>
-            </>
-          )}
-          <ReactionPicker open={showReactionPicker} onToggle={() => setShowReactionPicker((current) => !current)} onSelect={(emoji) => { sendReaction(emoji); setShowReactionPicker(true); }} />
-        </div>
-      </footer>
+            ) : (
+              <>
+                <ControlButton
+                  active={!micMuted}
+                  primary
+                  onClick={toggleMic}
+                  icon={micMuted ? <MicOff size={18} /> : <Mic size={18} />}
+                  label={micMuted ? 'Unmute' : 'Mute'}
+                />
+                <ControlButton
+                  active={speakerOn}
+                  onClick={() => setSpeakerOn((current) => !current)}
+                  icon={speakerOn ? <Headphones size={18} /> : <HeadphoneOff size={18} />}
+                  label={speakerOn ? 'Speaker' : 'Audio off'}
+                />
+                <button onClick={leaveVoice} aria-label="Leave voice" className="button room-leave-voice">
+                  <PhoneOff size={18} /><span>Leave voice</span>
+                </button>
+              </>
+            )}
+            <ReactionPicker
+              open={showReactionPicker}
+              onToggle={() => setShowReactionPicker((current) => !current)}
+              onSelect={(emoji) => { sendReaction(emoji); setShowReactionPicker(true); }}
+            />
+          </div>
+        </footer>
 
-      {reportTarget && <ReportModal nickname={reportTarget.nickname} onCancel={() => setReportTarget(null)} onSubmit={async (reason) => { await reportUser(reportTarget.sessionId, reportTarget.nickname, reason); setReportTarget(null); }} />}
-      {showExplore && <ExploreModal junctions={exploreJunctions} currentJunctionId={junction.id} onClose={() => setShowExplore(false)} onJoin={(slug) => { setShowExplore(false); onExplore(slug); }} />}
+        {reportTarget && (
+          <ReportModal
+            nickname={reportTarget.nickname}
+            onCancel={() => setReportTarget(null)}
+            onSubmit={async (reason) => {
+              await reportUser(reportTarget.sessionId, reportTarget.nickname, reason);
+              setReportTarget(null);
+            }}
+          />
+        )}
+        {showExplore && (
+          <ExploreModal
+            junctions={exploreJunctions}
+            currentJunctionId={junction.id}
+            onClose={() => setShowExplore(false)}
+            onJoin={(slug) => { setShowExplore(false); void onExplore(slug).catch((reason: Error) => setVoiceError(reason.message)); }}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -302,23 +238,22 @@ function ParticipantStage({ voiceParticipants, listeners, participants, session,
   ];
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col">
-      <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 sm:px-5">
-        <h2 className="text-sm font-semibold">Voice stage</h2>
-        <span className="text-xs text-muted">
-          {speakingCount > 0 ? `${speakingCount} speaking` : `${participants.length} here · ${voiceParticipants.length} in voice`}
-        </span>
+    <section className="voice-stage">
+      <div className="room-panel-heading">
+        <h2>Voice stage</h2>
+        <p className="stage-counts">{participants.length} here <span>·</span> {voiceParticipants.length} in voice</p>
       </div>
-      <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
+      <div className="voice-stage-scroll">
+        {speakingCount > 0 && <p className="stage-speaking"><span />{speakingCount} speaking</p>}
         {loading ? (
-          <p role="status" className="py-8 text-center text-sm text-muted">Loading participants…</p>
+          <p role="status" className="room-loading">Loading participants…</p>
         ) : participants.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted">You’re the first one here.</p>
+          <p className="room-loading">You’re the first one here.</p>
         ) : (
           groups.filter(({ members }) => members.length > 0).map(({ label, members }) => (
-            <section key={label}>
-              <h3 className="mb-2 text-xs font-medium text-muted">{label} ({members.length})</h3>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,8rem),1fr))] gap-2.5">
+            <section key={label} className="stage-group">
+              <h3>{label} <span>({members.length})</span></h3>
+              <div className="participant-grid">
                 {members.map((participant) => (
                   <ParticipantCard
                     key={participant.id}
@@ -338,46 +273,72 @@ function ParticipantStage({ voiceParticipants, listeners, participants, session,
 
 function ParticipantCard({ participant, isMe, speaking }: { participant: Participant; isMe: boolean; speaking: boolean }) {
   const status = participant.in_voice ? (participant.mic_muted ? 'Muted' : speaking ? 'Speaking' : 'Live mic') : 'Listening';
+  const StatusIcon = !participant.in_voice ? Headphones : participant.mic_muted ? MicOff : Mic;
 
   return (
-    <div className={`flex min-w-0 flex-col items-center gap-1.5 rounded-lg border px-3 py-3.5 ${speaking ? 'border-accent-line bg-accent-soft' : 'border-line bg-surface'}`}>
-      <Avatar emoji={participant.avatar_emoji} color={participant.avatar_color} size="md" speaking={speaking} ring={participant.in_voice} />
-      <p className="w-full truncate text-center text-sm font-medium">
-        {participant.nickname}{isMe && <span className="ml-1 text-xs text-muted">(you)</span>}
+    <div className={`voice-participant-card ${speaking ? 'is-speaking' : ''}`}>
+      <Avatar
+        emoji={participant.avatar_emoji}
+        color={participant.avatar_color}
+        size="lg"
+        speaking={speaking}
+        speakingColor="#8B5CF6"
+        ring={participant.in_voice}
+      />
+      <p className="participant-name">
+        <span>{participant.nickname}</span>{isMe && <small>(you)</small>}
       </p>
-      <span className={`text-xs ${speaking ? 'font-medium text-accent' : 'text-muted'}`}>{status}</span>
+      <span className={`participant-status ${speaking ? 'is-speaking' : ''}`}>
+        <StatusIcon size={12} aria-hidden="true" />{status}
+      </span>
     </div>
   );
 }
 
-function ControlButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: ReactNode; label: string }) {
+function ControlButton({ active, onClick, icon, label, primary = false }: { active: boolean; onClick: () => void; icon: ReactNode; label: string; primary?: boolean }) {
   return (
-    <button onClick={onClick} className={`button gap-1.5 px-2 sm:gap-2 sm:px-3 ${active ? 'border border-accent-line bg-accent-soft text-accent hover:bg-subtle' : 'button-secondary'}`}>
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={`button room-control ${primary ? 'button-primary' : active ? 'room-control-active' : 'button-secondary'}`}
+    >
       {icon}{label}
     </button>
   );
 }
 
-function MobileTabButton({ active, onClick, icon, label, count }: { active: boolean; onClick: () => void; icon: ReactNode; label: string; count?: number }) {
+type RoomTab = 'stage' | 'chat' | 'people';
+
+function RoomNavigation({ active, onChange, count, desktop = false }: { active: RoomTab; onChange: (tab: RoomTab) => void; count: number; desktop?: boolean }) {
+  const tabs = [
+    { key: 'stage', label: 'Stage', icon: Volume2, count },
+    { key: 'chat', label: 'Chat', icon: MessageSquare },
+    { key: 'people', label: 'People', icon: Users, count },
+  ] as const;
+
   return (
-    <button onClick={onClick} aria-label={label} aria-pressed={active} className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 border-b-2 text-sm font-medium focus-visible:outline-offset-[-3px] ${active ? 'border-accent text-accent' : 'border-transparent text-muted'}`}>
-      {icon}{label}{count ? <span className="text-xs">({count})</span> : null}
-    </button>
+    <nav className={`room-navigation ${desktop ? 'room-navigation-desktop' : 'room-navigation-mobile'}`} aria-label={desktop ? 'Room navigation' : 'Mobile room navigation'}>
+      {tabs.map(({ key, label, icon: Icon, ...tab }) => (
+        <button key={key} onClick={() => onChange(key)} aria-label={label} aria-pressed={active === key} className={active === key ? 'is-active' : ''}>
+          <Icon size={17} aria-hidden="true" />{label}{'count' in tab && <span className="room-tab-count">{tab.count}</span>}
+        </button>
+      ))}
+    </nav>
   );
 }
 
 function ReactionPicker({ open, onToggle, onSelect }: { open: boolean; onToggle: () => void; onSelect: (emoji: string) => void }) {
   return (
-    <div className="relative">
+    <div className="room-reaction-control">
       {open && (
-        <div className="absolute bottom-full right-0 z-30 mb-2 grid grid-cols-5 gap-1 rounded-lg border border-line bg-surface p-2 shadow-md">
+        <div role="group" aria-label="Room reactions" className="reaction-picker-grid room-reaction-picker">
           {REACTION_EMOJIS.map((emoji) => (
-            <button key={emoji} onClick={() => onSelect(emoji)} className="grid size-9 place-items-center rounded-md text-base hover:bg-subtle">{emoji}</button>
+            <button key={emoji} aria-label={`React with ${emoji}`} onClick={() => onSelect(emoji)} className="reaction-emoji-button">{emoji}</button>
           ))}
         </div>
       )}
-      <button onClick={onToggle} aria-expanded={open} className={`button gap-1.5 px-2 sm:gap-2 sm:px-3 ${open ? 'border border-accent-line bg-accent-soft text-accent' : 'button-secondary'}`}>
-        <Smile size={16} /> React
+      <button onClick={onToggle} aria-expanded={open} className={`button ${open ? 'room-control-active' : 'button-secondary'}`}>
+        <Smile size={18} />React
       </button>
     </div>
   );

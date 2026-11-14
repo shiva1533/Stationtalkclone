@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Smile, X, Bell, BellOff } from 'lucide-react';
-import type { Message, Reaction } from '@/types';
+import type { Message, Participant, Reaction } from '@/types';
 import { ChatMessage } from './ChatMessage';
 import { supabase } from '@/lib/supabase';
 import { useSession } from '@/context/SessionContext';
@@ -10,6 +10,9 @@ interface ChatPanelProps {
   messages: Message[];
   reactions: Reaction[];
   blockedSessions: Set<string>;
+  isBlocked: (sender: { session_id: string; user_id?: string | null }) => boolean;
+  participants: Participant[];
+  connected: boolean;
   slowModeSeconds: number;
   onSend: (content: string, replyTo: string | null) => Promise<void>;
   onToggleReaction: (messageId: string, emoji: string) => Promise<void>;
@@ -21,12 +24,13 @@ interface ChatPanelProps {
 
 interface TypingUser {
   sessionId: string;
+  userId: string;
   nickname: string;
   avatarColor: string;
 }
 
 const EMOJI_PICKER = [
-  '😀', '😂', '😍', '🥰', '😎', '🤔', '😅', '😭', '😡', '👍',
+  '😀', '😂', '😍', '🥰', '😎', '🤔', '😅', '😭', '😢', '😡', '👍',
   '👎', '👏', '🙌', '🤝', '👋', '🔥', '✨', '💯', '🎉', '❤️',
   '🧡', '💛', '💚', '💙', '💜', '🤍', '🖤', '💪', '🤙', '🙏',
 ];
@@ -36,6 +40,9 @@ export function ChatPanel({
   messages,
   reactions,
   blockedSessions,
+  isBlocked,
+  participants,
+  connected,
   slowModeSeconds,
   onSend,
   onToggleReaction,
@@ -60,6 +67,8 @@ export function ChatPanel({
   const lastTypingSent = useRef(0);
   const lastSentTime = useRef(0);
   const typingTimeoutRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const members = useRef(participants);
+  members.current = participants;
 
   // Auto-scroll
   useEffect(() => {
@@ -81,10 +90,16 @@ export function ChatPanel({
 
   // Typing indicator channel
   useEffect(() => {
-    const ch = supabase.channel(`typing:${junctionId}`, { config: { broadcast: { self: false } } });
+    if (!connected) return;
+    const timeouts = typingTimeoutRef.current;
+    const ch = supabase.channel(`typing:${junctionId}`, { config: { private: true, broadcast: { self: false } } });
     ch.on('broadcast', { event: 'typing' }, (payload) => {
       const data = payload.payload as TypingUser;
       if (data.sessionId === session?.sessionId) return;
+      const member = members.current.find((person) => person.session_id === data.sessionId && person.user_id === data.userId);
+      if (!member || isBlocked(member)) return;
+      data.nickname = member.nickname;
+      data.avatarColor = member.avatar_color;
       setTypingUsers((prev) => {
         const next = new Map(prev);
         next.set(data.sessionId, data);
@@ -108,10 +123,10 @@ export function ChatPanel({
 
     return () => {
       supabase.removeChannel(ch);
-      typingTimeoutRef.current.forEach((t) => clearTimeout(t));
-      typingTimeoutRef.current.clear();
+      timeouts.forEach((t) => clearTimeout(t));
+      timeouts.clear();
     };
-  }, [junctionId, session?.sessionId]);
+  }, [junctionId, session?.sessionId, connected, isBlocked]);
 
   // Slow mode countdown
   useEffect(() => {
@@ -158,6 +173,7 @@ export function ChatPanel({
       event: 'typing',
       payload: {
         sessionId: session.sessionId,
+        userId: session.userId,
         nickname: session.nickname,
         avatarColor: session.avatarColor,
       },
@@ -173,7 +189,7 @@ export function ChatPanel({
     if (!input.trim() || sending || slowModeRemaining > 0) return;
     setSending(true);
     try {
-      await onSend(input, replyTo?.id ?? null);
+      await onSend(input, replyTo && !isBlocked(replyTo) ? replyTo.id : null);
       setInput('');
       setReplyTo(null);
       setAtBottom(true);
@@ -204,14 +220,15 @@ export function ChatPanel({
     return acc;
   }, {});
 
-  const activeTyping = Array.from(typingUsers.values()).slice(0, 3);
+  const activeTyping = Array.from(typingUsers.values())
+    .filter((user) => !isBlocked({ session_id: user.sessionId, user_id: user.userId })).slice(0, 3);
   const canSend = input.trim().length > 0 && !sending && slowModeRemaining === 0;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-surface">
+    <section className="room-chat">
       {/* Chat header */}
-      <div className="flex min-h-12 shrink-0 items-center justify-between border-b border-line px-4">
-        <h3 className="text-sm font-semibold">Live chat</h3>
+      <div className="room-panel-heading">
+        <h2>Live chat</h2>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-white font-medium">
@@ -225,7 +242,8 @@ export function ChatPanel({
           )}
           <button
             onClick={onToggleMute}
-            className="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-subtle transition-colors"
+            className="room-icon-button"
+            aria-label={notificationsMuted ? 'Unmute notifications' : 'Mute notifications'}
             title={notificationsMuted ? 'Unmute notifications' : 'Mute notifications'}
           >
             {notificationsMuted ? <BellOff size={16} /> : <Bell size={16} />}
@@ -237,10 +255,10 @@ export function ChatPanel({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto py-2 space-y-0.5 scroll-smooth"
+        className="room-chat-messages"
       >
         {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted">
+          <div className="room-chat-empty">
             <p>No messages yet. Say hello to start the chat.</p>
           </div>
         ) : (
@@ -289,7 +307,7 @@ export function ChatPanel({
       )}
 
       {/* Reply preview */}
-      {replyTo && (
+      {replyTo && !isBlocked(replyTo) && (
         <div className="px-3 py-2 bg-accent-soft border-t border-accent-line flex items-center gap-2">
           <span className="text-muted text-xs">↳</span>
           <div className="flex-1 min-w-0 text-xs">
@@ -304,13 +322,14 @@ export function ChatPanel({
 
       {/* Emoji picker */}
       {showEmoji && (
-        <div ref={emojiRef} className="max-h-[30dvh] shrink-0 overflow-y-auto border-t border-line bg-subtle px-3 py-2">
-          <div className="grid grid-cols-10 gap-1">
+        <div ref={emojiRef} className="chat-emoji-panel">
+          <div className="chat-emoji-grid">
             {EMOJI_PICKER.map((e) => (
               <button
                 key={e}
                 onClick={() => addEmoji(e)}
-                className="grid aspect-square place-items-center rounded-md text-sm hover:bg-surface"
+                aria-label={`Insert ${e}`}
+                className="reaction-emoji-button"
               >
                 {e}
               </button>
@@ -320,14 +339,14 @@ export function ChatPanel({
       )}
 
       {/* Input */}
-      <div className="p-3 border-t border-line">
-        <div className="flex items-end gap-2">
+      <div className="room-chat-composer">
+        <div className="composer-controls">
           <div className="relative">
             <button
               onClick={() => setShowEmoji((v) => !v)}
               aria-label="Choose an emoji"
               aria-expanded={showEmoji}
-              className="button button-secondary !px-2"
+              className="room-icon-button composer-emoji"
             >
               <Smile size={16} />
             </button>
@@ -338,21 +357,21 @@ export function ChatPanel({
             onKeyDown={handleKeyDown}
             rows={1}
             maxLength={500}
-            placeholder={slowModeRemaining > 0 ? `Wait ${slowModeRemaining}s…` : 'Type a message…'}
+            placeholder={slowModeRemaining > 0 ? `Wait ${slowModeRemaining}s…` : 'Type a message...'}
             aria-label="Chat message"
             disabled={slowModeRemaining > 0}
-            className="field max-h-24 min-w-0 flex-1 resize-none disabled:opacity-50"
+            className="composer-input"
           />
           <button
             onClick={handleSend}
             aria-label="Send message"
             disabled={!canSend}
-            className="button button-primary !px-2.5"
+            className="composer-send"
           >
             <Send size={16} />
           </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

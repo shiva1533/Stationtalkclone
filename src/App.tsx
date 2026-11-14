@@ -1,91 +1,67 @@
 import { useState } from 'react';
 import { SessionProvider, useSession } from '@/context/SessionContext';
+import { ActiveRoomProvider, useActiveRoom } from '@/context/ActiveRoomContext';
+import { JunctionsProvider } from '@/hooks/useJunctions';
 import { LandingPage } from '@/components/LandingPage';
 import { RoomView } from '@/components/RoomView';
 import { NicknameModal } from '@/components/NicknameModal';
-import { supabase } from '@/lib/supabase';
-import { saveSession } from '@/lib/session';
-import type { Junction, Session } from '@/types';
+import { ActiveCall } from '@/components/ActiveCall';
+import type { Session } from '@/types';
 
 function JunctionApp() {
-  const { session, setSession, ready } = useSession();
-  const [activeJunction, setActiveJunction] = useState<Junction | null>(null);
-  const [loadingJunction, setLoadingJunction] = useState(false);
-  const [showNickname, setShowNickname] = useState(false);
+  const { session, setSession } = useSession();
+  const room = useActiveRoom();
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleJoin = async (slug: string) => {
+  const enter = async (slug: string) => {
+    setOpening(true);
+    setError('');
+    try { await room.openRoom(slug); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not open the room.'); }
+    finally { setOpening(false); }
+  };
+
+  const handleJoin = (slug: string) => {
     if (!session) return;
-    setPendingSlug(slug);
-    setShowNickname(true);
+    if (!session.nameConfirmed) { setPendingSlug(slug); return; }
+    void enter(slug);
   };
 
-  const handleConfirmNickname = (updated: Session) => {
-    setSession(updated);
-    saveSession(updated);
-    setShowNickname(false);
-    if (pendingSlug) {
-      enterJunction(pendingSlug);
-    }
-  };
-
-  const enterJunction = async (slug: string) => {
-    setLoadingJunction(true);
-    const { data } = await supabase.from('junctions').select('*').eq('slug', slug).maybeSingle();
-    setLoadingJunction(false);
-    if (data) {
-      setActiveJunction(data as Junction);
-    }
-  };
-
-  const handleLeave = () => {
-    setActiveJunction(null);
+  const confirmName = async (updated: Session) => {
+    await setSession(updated);
+    const slug = pendingSlug;
     setPendingSlug(null);
+    if (slug) await enter(slug);
   };
-
-  if (!ready || !session) {
-    return (
-      <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-line border-t-accent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (loadingJunction) {
-    return (
-      <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <div className="space-y-3 text-center">
-          <div className="w-8 h-8 border-2 border-line border-t-accent rounded-full animate-spin mx-auto" />
-          <p className="text-muted text-sm">Entering Junction…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (activeJunction) {
-    return <RoomView junction={activeJunction} session={session} onLeave={handleLeave} onExplore={enterJunction} />;
-  }
 
   return (
-    <>
-      <LandingPage onJoin={handleJoin} />
-      <NicknameModal
-        open={showNickname}
-        session={session}
-        onConfirm={handleConfirmNickname}
-        onCancel={() => {
-          setShowNickname(false);
-          setPendingSlug(null);
-        }}
-      />
-    </>
+    <div className={room.minimized ? 'has-active-call' : undefined}>
+      {room.junction && !room.minimized ? <RoomView /> : <LandingPage onJoin={handleJoin} />}
+      {opening && <p className="app-status" role="status">Opening room…</p>}
+      {error && <div className="app-status" role="alert">{error}<button onClick={() => setError('')} aria-label="Dismiss">×</button></div>}
+      <ActiveCall />
+      {session && <NicknameModal open={Boolean(pendingSlug)} session={session} onConfirm={confirmName} onCancel={() => setPendingSlug(null)} />}
+    </div>
   );
 }
 
+function SessionGate() {
+  const { ready, error } = useSession();
+  if (error) {
+    return (
+      <main className="mx-auto max-w-lg space-y-3 p-6">
+        <h1 className="text-xl font-semibold">Junction</h1>
+        <p role="alert" className="text-sm text-muted">{error}</p>
+        <button className="button button-primary" onClick={() => window.location.reload()}>Try again</button>
+      </main>
+    );
+  }
+  if (!ready) return <p role="status" className="p-6 text-muted">Connecting to Junction…</p>;
+  return <JunctionsProvider><ActiveRoomProvider><JunctionApp /></ActiveRoomProvider></JunctionsProvider>;
+}
+
 export default function App() {
-  return (
-    <SessionProvider>
-      <JunctionApp />
-    </SessionProvider>
-  );
+  return <SessionProvider><SessionGate /></SessionProvider>;
 }

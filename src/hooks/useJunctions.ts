@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
+import { createContext, createElement, useContext, useEffect, useState, useCallback, useMemo, useSyncExternalStore, type ReactNode } from 'react';
+import { getCommunitySnapshot, subscribeCommunity } from '@/lib/communityPresence';
 import { supabase } from '@/lib/supabase';
 import type { Junction } from '@/types';
 import { PRESENCE_TIMEOUT_MS } from '@/lib/constants';
@@ -17,11 +18,21 @@ interface JunctionWithPresence extends Junction {
   participants: JunctionParticipantPreview[];
 }
 
-export function useJunctions() {
+function useDirectoryData() {
   const [junctions, setJunctions] = useState<Junction[]>([]);
-  const [presence, setPresence] = useState<
-    Record<string, { online: number; voice: number; participants: JunctionParticipantPreview[] }>
-  >({});
+  const [presenceRows, setPresenceRows] = useState<(JunctionParticipantPreview & { junction_id: string; connection_id: string })[]>([]);
+  const community = useSyncExternalStore(subscribeCommunity, getCommunitySnapshot);
+  const presence = useMemo(() => {
+    const map: Record<string, { online: number; voice: number; participants: JunctionParticipantPreview[] }> = {};
+    for (const row of presenceRows) {
+      if (community.ready && !community.members.some((member) => member.session_id === row.session_id && member.junction_id === row.junction_id && member.connection_id === row.connection_id)) continue;
+      const entry = map[row.junction_id] ??= { online: 0, voice: 0, participants: [] };
+      entry.online++;
+      if (row.in_voice) entry.voice++;
+      if (entry.participants.length < 5) entry.participants.push(row);
+    }
+    return map;
+  }, [presenceRows, community]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -44,26 +55,10 @@ export function useJunctions() {
     const cutoff = new Date(Date.now() - PRESENCE_TIMEOUT_MS).toISOString();
     const { data } = await supabase
       .from('participants')
-      .select('junction_id, session_id, nickname, avatar_emoji, avatar_color, in_voice')
+      .select('junction_id, session_id, connection_id, nickname, avatar_emoji, avatar_color, in_voice')
       .gt('last_heartbeat', cutoff)
       .is('left_at', null);
-    const map: Record<string, { online: number; voice: number; participants: JunctionParticipantPreview[] }> = {};
-    for (const row of data ?? []) {
-      const key = row.junction_id as string;
-      if (!map[key]) map[key] = { online: 0, voice: 0, participants: [] };
-      map[key].online += 1;
-      if (row.in_voice) map[key].voice += 1;
-      if (map[key].participants.length < 5) {
-        map[key].participants.push({
-          session_id: row.session_id as string,
-          nickname: row.nickname as string,
-          avatar_emoji: row.avatar_emoji as string,
-          avatar_color: row.avatar_color as string,
-          in_voice: row.in_voice as boolean,
-        });
-      }
-    }
-    setPresence(map);
+    setPresenceRows(data ?? []);
   }, []);
 
   useEffect(() => {
@@ -71,7 +66,7 @@ export function useJunctions() {
     fetchPresence();
 
     const presenceChannel = supabase
-      .channel('junctions-presence-overview')
+      .channel('junctions-presence-overview', { config: { private: true } })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, () => {
         fetchPresence();
       })
@@ -104,4 +99,17 @@ export function useJunctions() {
   };
 
   return { junctions: junctionsWithPresence, loading, loadFailed, totalOnline, refresh: fetchPresence, retry };
+}
+
+const DirectoryContext = createContext<ReturnType<typeof useDirectoryData> | null>(null);
+
+export function JunctionsProvider({ children }: { children: ReactNode }) {
+  const value = useDirectoryData();
+  return createElement(DirectoryContext.Provider, { value }, children);
+}
+
+export function useJunctions() {
+  const value = useContext(DirectoryContext);
+  if (!value) throw new Error('useJunctions requires JunctionsProvider');
+  return value;
 }

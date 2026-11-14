@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Session } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { AVATAR_EMOJIS, AVATAR_COLORS, randomNickname, randomAvatar } from '@/lib/constants';
 import { Shuffle, Check } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { Dialog } from './Dialog';
+import { validDisplayName } from '@/lib/session';
 
 interface NicknameModalProps {
   open: boolean;
   session: Session;
-  onConfirm: (s: Session) => void;
+  onConfirm: (s: Session) => void | Promise<void>;
   onCancel: () => void;
   title?: string;
   description?: string;
@@ -22,6 +23,9 @@ export function NicknameModal({ open, session, onConfirm, onCancel, title = 'Joi
   const [color, setColor] = useState(session.avatarColor);
   const [checking, setChecking] = useState(false);
   const [taken, setTaken] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const checkVersion = useRef(0);
 
   useEffect(() => {
     if (open) {
@@ -29,30 +33,43 @@ export function NicknameModal({ open, session, onConfirm, onCancel, title = 'Joi
       setEmoji(session.avatarEmoji);
       setColor(session.avatarColor);
       setTaken(false);
+      setError('');
     }
   }, [open, session]);
 
   if (!open) return null;
 
   const handleConfirm = async () => {
-    const finalNick = nickname.trim() || randomNickname();
+    const finalNick = nickname.trim();
+    if (!validDisplayName(finalNick) || saving || checking || taken) return;
     const updated: Session = {
       ...session,
       nickname: finalNick,
       avatarEmoji: emoji,
       avatarColor: color,
+      nameConfirmed: true,
     };
-    onConfirm(updated);
+    setSaving(true);
+    setError('');
+    try {
+      await onConfirm(updated);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not save your display name.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const shuffleName = () => {
-    setNickname(randomNickname());
+    void checkNickname(randomNickname());
   };
 
   const checkNickname = async (value: string) => {
+    const version = ++checkVersion.current;
     setNickname(value);
     if (value.trim().length < 2) {
       setTaken(false);
+      setChecking(false);
       return;
     }
     setChecking(true);
@@ -63,7 +80,8 @@ export function NicknameModal({ open, session, onConfirm, onCancel, title = 'Joi
       .ilike('nickname', value.trim())
       .gt('last_heartbeat', cutoff)
       .is('left_at', null)
-      .neq('session_id', session.sessionId);
+      .neq('user_id', session.userId);
+    if (version !== checkVersion.current) return;
     setTaken((count ?? 0) > 0);
     setChecking(false);
   };
@@ -159,12 +177,13 @@ export function NicknameModal({ open, session, onConfirm, onCancel, title = 'Joi
           </button>
           <button
             onClick={handleConfirm}
-            disabled={taken || nickname.trim().length < 2}
+            disabled={taken || checking || saving || !validDisplayName(nickname)}
             className="button button-primary flex-1"
           >
-            {confirmLabel}
+            {saving ? 'Saving…' : confirmLabel}
           </button>
         </div>
+        {error && <p role="alert" className="text-sm text-danger">{error}</p>}
     </Dialog>
   );
 }

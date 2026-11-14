@@ -23,6 +23,9 @@ export type JunctionCategory =
   | 'random';
 
 export interface Participant {
+  user_id: string | null;
+  connection_id: string;
+  connection_state: string;
   id: string;
   junction_id: string;
   session_id: string;
@@ -39,6 +42,7 @@ export interface Participant {
 }
 
 export interface Message {
+  user_id: string | null;
   id: string;
   junction_id: string;
   session_id: string;
@@ -51,6 +55,7 @@ export interface Message {
 }
 
 export interface Reaction {
+  user_id: string | null;
   id: string;
   message_id: string;
   junction_id: string;
@@ -60,16 +65,11 @@ export interface Reaction {
 }
 
 export interface Session {
+  userId: string;
+  nameConfirmed: boolean;
   sessionId: string;
   nickname: string;
   avatarEmoji: string;
   avatarColor: string;
   createdAt: number;
 }
-
-export type VoiceSignal =
-  | { type: 'offer'; from: string; to: string; sdp: RTCSessionDescriptionInit }
-  | { type: 'answer'; from: string; to: string; sdp: RTCSessionDescriptionInit }
-  | { type: 'ice'; from: string; to: string; candidate: RTCIceCandidateInit }
-  | { type: 'leave'; from: string }
-  | { type: 'hello'; from: string; nickname: string; avatarEmoji: string };
